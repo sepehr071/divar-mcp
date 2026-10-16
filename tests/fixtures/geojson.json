@@ -1,0 +1,50 @@
+{
+ "geojson": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "coordinates": [
+      [
+       [
+        [
+         51.270297,
+         35.758232
+        ],
+        [
+         51.270189,
+         35.758972
+        ],
+        [
+         51.271229,
+         35.76069
+        ]
+       ]
+      ]
+     ],
+     "type": "MultiPolygon"
+    },
+    "properties": {
+     "centroid": {
+      "latitude": 35.7583466,
+      "longitude": 51.2784271
+     },
+     "id": 153,
+     "name": "کن",
+     "slug": "kan",
+     "second_slug": "kan",
+     "zoom_level": 12
+    }
+   }
+  ]
+ },
+ "focus": {
+  "point": {
+   "latitude": 35.7032433,
+   "longitude": 51.3891716
+  },
+  "zoom_level": 13.5
+ },
+ "_note": "trimmed: 421 features in the full response, coordinate arrays cut to 3 items"
+}
