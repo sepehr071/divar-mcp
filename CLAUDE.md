@@ -8,11 +8,18 @@ API map this server is built on (endpoints, samples, quirks, test report, compet
 
 ## Layout
 
-- `src/divar_mcp/http.py`: the only HTTP code. One shared `httpx.AsyncClient` (`trust_env=False`, proxy only from
-  `DIVAR_MCP_PROXY`), a concurrency semaphore, `api(path, body=None)` for the gateway `https://api.divar.ir/v8` (GET, or
-  POST when `body` is given: every Divar POST used here is a read-only query), one retry (fixed 0.5 s, `RETRY_DELAY`) on
-  dropped connections, an empty 200 body and 502/503/504, no redirects followed, `ApiError(ToolError)` (passes on the API's
-  own `message` for 400/404), `set_transport()` for tests.
+- `src/divar_mcp/http.py`: the only HTTP code. One shared `httpx.AsyncClient` (`trust_env=False`) on a Chrome-impersonating
+  `httpx_curl_cffi.AsyncCurlTransport` (TLS/HTTP2 and the User-Agent / `sec-ch-ua` headers come from the profile; we send no
+  User-Agent of our own, only Accept-Language `fa-IR`, Origin/Referer and XHR `sec-fetch-*`), a concurrency semaphore
+  (`MAX_CONCURRENCY` 2) plus a random 0.15-0.6 s `JITTER` before each call, `api(path, body=None)` for the gateway
+  `https://api.divar.ir/v8` (GET, or POST when `body` is given: every Divar POST used here is a read-only query), up to 2
+  retries (`MAX_RETRIES`, jittered exponential backoff from `RETRY_DELAY`, `Retry-After` honoured, wait capped at 10 s) on
+  timeouts, dropped connections, an empty 200 body, 429 and 5xx (a 403 is never retried), no redirects followed,
+  `ApiError(ToolError)` (passes on the API's own `message` for 400/404), `set_transport()` for tests.
+  `DIVAR_MCP_PROXY` may be a comma-separated list: one proxy is used until a block (403/429/challenge) or connect error,
+  then `_next_proxy` rebuilds the client on the next. A challenge page (`_is_challenge`) is cleared once with a headless
+  patchright browser (optional extra: install `divar-mcp[browser]`, then `patchright install chromium`), its cookies are
+  copied into the client and the request is retried once; without patchright it raises `ApiError` saying so.
 - `core.py`: not a tool module. Persian `fold`, price parsing (`to_int`, `short_toman`), `price_flags`, `row_prices`, `card`
   (a POST_ROW -> compact ad), `dist` / `sane` statistics, cached reference data (cities, categories, filter schemas,
   districts; 1 h, `_CACHE`), resolvers (`resolve_cities`, `resolve_category`, `resolve_districts`), `build_query` (friendly
@@ -33,14 +40,14 @@ API map this server is built on (endpoints, samples, quirks, test report, compet
 
 ## Commands
 
-uv needs the local proxy to download packages; the server and tests call Divar directly (env proxies are ignored).
+uv needs the local proxy to download packages; the server and tests call Divar directly (env proxies are ignored, only `DIVAR_MCP_PROXY` counts).
 
 ```bash
 export HTTPS_PROXY=http://127.0.0.1:10898 HTTP_PROXY=http://127.0.0.1:10898
 uv sync
 uv run ruff check . && uv run ruff format --check .
-uv run pytest -q            # unit tests, offline
-uv run pytest -m live -q    # one live test per tool, about 25 s
+uv run python -m pytest -q            # unit tests, offline (plain `uv run pytest` hits a uv trampoline error here)
+uv run python -m pytest -m live -q    # one live test per tool, about 25 s
 ```
 
 ## Rules for changes
@@ -61,7 +68,7 @@ uv run pytest -m live -q    # one live test per tool, about 25 s
 - New tool: `@tool("Title")` async function, every param `Annotated[..., Field(...)]` with constraints and an example,
   docstring = what it returns + when to use + what to call next, compact dict output. Add a unit test with a real trimmed
   fixture, a live test, a README tool-table row, and an `INSTRUCTIONS` mention.
-- Keep `README.md` tool tables equal to `list_tools()` (a unit test checks it). Deps stay `mcp` + `httpx` only.
+- Keep `README.md` tool tables equal to `list_tools()` (a unit test checks it). Deps stay `mcp`, `httpx`, `httpx-curl-cffi` and `curl-cffi` (optional extra `browser` = `patchright==1.63.0`).
 - Write ZWNJ as `\u200c` in code, never the invisible character.
 
 ## Divar quirks (keep them)
@@ -100,7 +107,7 @@ uv run pytest -m live -q    # one live test per tool, about 25 s
   ads to read it plus floor (زیرهمکف), "پارکینگ ندارد", "آسانسور ندارد", and rescales the score; unchecked ads get only +5 for a
   recent bump. `dv_similar` drops property cards priced 5x off or with a title area 0.4x-2.5x off (`excluded_outliers`).
 - `dv_search` flags prices at or under a tenth of the fetched median as `outlier` (`flag_outliers`, needs 5 priced ads).
-- No rate limit was seen (40 searches in 15 s). Keep calls modest anyway: the semaphore allows 4 at once.
+- No rate limit was seen (40 searches in 15 s). Keep calls modest anyway: the semaphore allows 2 at once, with a small jitter before each call.
 - Not available: price valuation, a similar-ads endpoint (`dv_similar` searches the ad's breadcrumb), sort by price,
   dealer paging, SEO slug routes, anything behind login.
 

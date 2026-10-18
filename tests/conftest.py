@@ -36,6 +36,7 @@ def fresh_state(monkeypatch, request):
     http.set_transport(None)
     core._CACHE.clear()
     http.RETRY_DELAY = 0
+    monkeypatch.setattr(http, "JITTER", (0, 0))
     if "live" not in request.keywords:
         monkeypatch.setattr(core, "now", lambda: NOW)
         monkeypatch.setattr(search, "now", lambda: NOW)

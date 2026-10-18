@@ -17,7 +17,7 @@ Claude, Cursor or Copilot. No account, no API key, nothing is posted or changed.
 
 - **What:** Unofficial MCP server for Divar (دیوار, divar.ir), Iran's classifieds site. Persian queries work best; prices in Toman.
 - **Install:** `claude mcp add divar -- uvx divar-mcp` (stdio, needs [uv](https://docs.astral.sh/uv/getting-started/installation/) and Python 3.10+).
-- **Auth:** none. Optional `DIVAR_MCP_PROXY` sets an HTTP proxy for every request.
+- **Auth:** none. Optional `DIVAR_MCP_PROXY` sets an HTTP proxy for every request, or a comma-separated list (one is used until it is blocked or cannot connect, then the next).
 - **Access:** read-only on Divar. It cannot log in, post, chat, bookmark or reveal a seller's phone number. Only `dv_watch` and `dv_price_trend` write, to a local file of your own searches.
 - **Also:** resources `divar://cities`, `divar://categories`, `divar://category-filters/{slug}`; prompts `compare_ads`, `best_under_budget`, `appraise_listing`, `watch_market`.
 - **Tools:** 31, all prefixed `dv_`. Start with `dv_search`, `dv_post`, `dv_cheapest`, `dv_best_for_budget`, `dv_market`.
@@ -130,7 +130,7 @@ It does not push. `dv_new_since` returns only ads newer than a timestamp, and `d
 
 ## Configuration
 
-The server calls `api.divar.ir` directly and ignores system proxy variables. To use a proxy set `DIVAR_MCP_PROXY=http://host:port`.
+The server calls `api.divar.ir` directly and ignores system proxy variables. To use a proxy set `DIVAR_MCP_PROXY=http://host:port` (or a comma-separated list; the next one takes over when one is blocked or cannot connect). Requests use a Chrome TLS/HTTP2 fingerprint; if Divar ever serves a bot-check page, install `divar-mcp[browser]` and run `patchright install chromium`.
 Saved watches and price history go to `~/.divar-mcp/state.json`; set `DIVAR_MCP_STATE` to use another file.
 
 ## Development
@@ -139,8 +139,8 @@ Saved watches and price history go to `~/.divar-mcp/state.json`; set `DIVAR_MCP_
 export HTTPS_PROXY=http://127.0.0.1:10898 HTTP_PROXY=http://127.0.0.1:10898   # uv downloads only
 uv sync
 uv run ruff check . && uv run ruff format --check .
-uv run pytest -q            # offline, recorded fixtures
-uv run pytest -m live -q    # real API, one test per tool
+uv run python -m pytest -q            # offline, recorded fixtures
+uv run python -m pytest -m live -q    # real API, one test per tool
 ```
 
 The API map this server is built on lives next to it in `../divar/`.
