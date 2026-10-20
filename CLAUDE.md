@@ -1,7 +1,7 @@
 # divar-mcp
 
 Unofficial, read-only MCP server for Divar (divar.ir), Iran's classifieds site (real estate, cars, phones, jobs, services).
-Repo: GitHub `sepehr071/divar-mcp`. Not released yet: no PyPI or MCP Registry release (planned PyPI name `divar-mcp`).
+Published: GitHub `sepehr071/divar-mcp`, PyPI `divar-mcp`, MCP Registry `io.github.sepehr071/divar-mcp`, listed in `../../awesome-iran-mcp`.
 It is a sibling of `../fidibo-mcp` and `../digikala-mcp` and copies their layout and idioms; keep them in step.
 
 API map this server is built on (endpoints, samples, quirks, test report, competitor checklist): `../divar/`.
@@ -111,8 +111,9 @@ uv run python -m pytest -m live -q    # one live test per tool, about 25 s
 - Not available: price valuation, a similar-ads endpoint (`dv_similar` searches the ad's breadcrumb), sort by price,
   dealer paging, SEO slug routes, anything behind login.
 
-## Release (when it is time)
+## Release
 
-Bump `version` in `pyproject.toml` and both versions in `server.json`, `git init`, create the GitHub repo, tag `vX.Y.Z`.
-`.github/workflows/publish.yml` (copied from fidibo-mcp, untested here) publishes to PyPI and the MCP Registry.
+Bump `version` in `pyproject.toml` and both versions in `server.json`, update `uv.lock` if deps changed, commit,
+then `git tag vX.Y.Z && git push --tags`. `.github/workflows/publish.yml` tests, publishes to PyPI (trusted
+publishing, environment `pypi`), creates the GitHub Release and publishes to the MCP Registry (GitHub OIDC).
 Then check the server table in `../README.md` and `../../awesome-iran-mcp` (see `../CLAUDE.md`).
