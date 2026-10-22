@@ -1,13 +1,13 @@
 [project]
 name = "divar-mcp"
-version = "0.2.0"
+version = "0.2.1"
 description = "Unofficial read-only MCP server for Divar (divar.ir): search classified ads in any Iranian city, compare, find the cheapest and best deals, appraise prices, browse the map."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Sepehr Radmard", email = "sepehrr80@gmail.com" }]
 requires-python = ">=3.10"
-keywords = ["mcp", "model-context-protocol", "divar", "iran", "classifieds", "real-estate", "cars", "persian"]
+keywords = ["mcp", "mcp-server", "model-context-protocol", "ai-agents", "iran", "persian", "divar", "divar-ir", "classifieds", "real-estate", "used-cars", "price-comparison", "toman", "claude"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
