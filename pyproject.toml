@@ -1,6 +1,6 @@
 [project]
 name = "divar-mcp"
-version = "0.2.1"
+version = "0.2.2"
 description = "Unofficial read-only MCP server for Divar (divar.ir): search classified ads in any Iranian city, compare, find the cheapest and best deals, appraise prices, browse the map."
 readme = "README.md"
 license = "MIT"
