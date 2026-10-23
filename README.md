@@ -31,7 +31,7 @@ Search, read ads, compare, find the cheapest and best-value ads, appraise prices
 - **Use when:** the user wants to find, price-check or monitor Divar ads (flats to buy or rent, used cars, phones, furniture, jobs...), or asks what something costs in a city.
 - **Do not use when:** the user wants to post an ad, message a seller or get a phone number (login-only on Divar), or needs a market other than Divar.
 - **Output:** compact JSON ad cards. Pass `token` between tools and `next_cursor` back as `cursor`.
-- **Machine-readable:** [`server.json`](https://github.com/sepehr071/divar-mcp/blob/main/server.json) and the [awesome-iran-mcp catalog](https://github.com/sepehr071/awesome-iran-mcp) (`TOOLS.md`, `servers.json`, `llms.txt`).
+- **Machine-readable:** [`server.json`](https://github.com/sepehr071/divar-mcp/blob/main/server.json) and the [iran-mcp catalog](https://github.com/sepehr071/iran-mcp) (`TOOLS.md`, `servers.json`, `llms.txt`).
 
 ## Why
 
@@ -354,7 +354,7 @@ Releases: bump the version in `pyproject.toml` and `server.json`, then push a `v
 
 ## Related servers
 
-- [awesome-iran-mcp](https://github.com/sepehr071/awesome-iran-mcp): catalog of all Iranian-service MCP servers
+- [iran-mcp](https://github.com/sepehr071/iran-mcp): catalog of all Iranian-service MCP servers
 - [digikala-mcp](https://github.com/sepehr071/digikala-mcp) for Digikala products and prices
 - [torob-mcp](https://github.com/sepehr071/torob-mcp) for price comparison across Iranian shops on Torob
 - [snapp-mcp](https://github.com/sepehr071/snapp-mcp) for Snapp
@@ -369,9 +369,9 @@ If this saves you clicks, a star helps others find it.
 
 ## Author
 
-<a href="https://www.linkedin.com/in/sepehr-radmard"><img src="https://raw.githubusercontent.com/sepehr071/awesome-iran-mcp/main/assets/author-banner.png" alt="Sepehr Radmard: open-source MCP servers for the Iranian web. LinkedIn: linkedin.com/in/sepehr-radmard" width="100%"></a>
+<a href="https://www.linkedin.com/in/sepehr-radmard"><img src="https://raw.githubusercontent.com/sepehr071/iran-mcp/main/assets/author-banner.png" alt="Sepehr Radmard: open-source MCP servers for the Iranian web. LinkedIn: linkedin.com/in/sepehr-radmard" width="100%"></a>
 
-Built and maintained by **Sepehr Radmard** (سپهر رادمرد). Connect on [LinkedIn](https://www.linkedin.com/in/sepehr-radmard) or follow [@sepehr071 on GitHub](https://github.com/sepehr071) for more MCP servers for Iranian websites, all listed in [awesome-iran-mcp](https://github.com/sepehr071/awesome-iran-mcp). If this saves you time, a star on the repo helps other people find it.
+Built and maintained by **Sepehr Radmard** (سپهر رادمرد). Connect on [LinkedIn](https://www.linkedin.com/in/sepehr-radmard) or follow [@sepehr071 on GitHub](https://github.com/sepehr071) for more MCP servers for Iranian websites, all listed in [iran-mcp](https://github.com/sepehr071/iran-mcp). If this saves you time, a star on the repo helps other people find it.
 
 ## License
 

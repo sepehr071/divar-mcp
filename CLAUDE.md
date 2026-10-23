@@ -1,7 +1,7 @@
 # divar-mcp
 
 Unofficial, read-only MCP server for Divar (divar.ir), Iran's classifieds site (real estate, cars, phones, jobs, services).
-Published: GitHub `sepehr071/divar-mcp`, PyPI `divar-mcp`, MCP Registry `io.github.sepehr071/divar-mcp`, listed in `../../awesome-iran-mcp`.
+Published: GitHub `sepehr071/divar-mcp`, PyPI `divar-mcp`, MCP Registry `io.github.sepehr071/divar-mcp`, listed in `../../iran-mcp`.
 It is a sibling of `../fidibo-mcp` and `../digikala-mcp` and copies their layout and idioms; keep them in step.
 
 API map this server is built on (endpoints, samples, quirks, test report, competitor checklist): `../divar/`.
@@ -116,4 +116,4 @@ uv run python -m pytest -m live -q    # one live test per tool, about 25 s
 Bump `version` in `pyproject.toml` and both versions in `server.json`, update `uv.lock` if deps changed, commit,
 then `git tag vX.Y.Z && git push --tags`. `.github/workflows/publish.yml` tests, publishes to PyPI (trusted
 publishing, environment `pypi`), creates the GitHub Release and publishes to the MCP Registry (GitHub OIDC).
-Then check the server table in `../README.md` and `../../awesome-iran-mcp` (see `../CLAUDE.md`).
+Then check the server table in `../README.md` and `../../iran-mcp` (see `../CLAUDE.md`).
