@@ -360,6 +360,7 @@ Releases: bump the version in `pyproject.toml` and `server.json`, then push a `v
 - [snapp-mcp](https://github.com/sepehr071/snapp-mcp) for Snapp
 - [technolife-mcp](https://github.com/sepehr071/technolife-mcp) for Technolife electronics
 - [jabama-mcp](https://github.com/sepehr071/jabama-mcp) for Jabama stays
+- [mcpfarsi.ir](https://mcpfarsi.ir/): Persian marketplace of MCP servers for Iranian services
 
 ## Disclaimer
 

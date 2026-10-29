@@ -35,6 +35,7 @@ Homepage = "https://github.com/sepehr071/divar-mcp"
 Source = "https://github.com/sepehr071/divar-mcp"
 Changelog = "https://github.com/sepehr071/divar-mcp/releases"
 Issues = "https://github.com/sepehr071/divar-mcp/issues"
+Website = "https://mcpfarsi.ir/"
 
 [project.scripts]
 divar-mcp = "divar_mcp.server:main"
