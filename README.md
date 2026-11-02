@@ -200,7 +200,7 @@ All tools start with `dv_` and are annotated read-only, except `dv_watch` and `d
 | `dv_posts` | Up to 10 ads in one call, compact |
 | `dv_compare` | 2 to 6 ads side by side: prices and only the specs that differ |
 | `dv_similar` | Ads like this one (same brand and area, widening step by step) |
-| `dv_seller` | A seller's personal and business ad counts, business card (or "personal seller") and other ads |
+| `dv_seller` | A seller's personal and business ad counts, business card (or "personal seller") and other ads (only business sellers' ads are listed, the first 11) |
 | `dv_dealer` | A business's public page: name, member since, first 11 ads |
 
 ## How it works

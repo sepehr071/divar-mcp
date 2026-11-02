@@ -96,6 +96,8 @@ uv run python -m pytest -m live -q    # one live test per tool, about 25 s
 - A province id (`parent` of a city) works as a search `city_ids` scope; there is no province list, so `city: "استان <city>"`
   names the province of that city (no `web_url`: the site has no province address we could confirm). Typed brand search (`fields-search`) is fuzzy ('car' finds Kia Carens): `build_query`
   keeps only hits that contain the typed text and validates keys against the option tree.
+- Since 2026-11 `owner-posts-list` answers `{}` (no widgets). `dv_seller` then falls back to `brand-landing` of the business
+  `brand_token` (first 11 ads, `active_ads` as the business count). A personal seller's other ads are no longer available.
 - Business card of a personal ad: `business-data/{token}/lazy` answers 404 "business not found"; `dv_seller` treats that as
   a personal seller. `/places/districts/{id}/neighbours` is short (Vanak lists only Jordan), so `dv_neighbours` adds `nearest`
   by centroid distance. `webengage.business_ref` (17 chars) is not a `brand_token`; `dv_post` does not return it.
