@@ -120,6 +120,14 @@ async def test_dv_seller_counts_business_card_and_other_ads(client, api):
     assert out["count"] == 2 and out["ads"][0]["token"] == "Qa5zZOOm" and out["ads"][0]["price"] == 1_500_000_000
 
 
+async def test_dv_seller_falls_back_to_dealer_page_when_owner_posts_is_empty(client, api):
+    api["/v8/premium-user/post-page/Qa5zZOOm/owner-posts-list"] = {}
+    api["/v8/premium-user/post-page/web/business-data/Qa5zZOOm/lazy"] = fixture("business.json")
+    api["/v8/premium-user/web/business/brand-landing/ZbeypyTr"] = fixture("brand_landing.json")
+    out = (await client.call_tool("dv_seller", {"token": "Qa5zZOOm", "limit": 2})).structured_content
+    assert out["count"] == 2 and out["business_ads"] and out["business"]["brand_token"] == "ZbeypyTr"
+
+
 async def test_dv_seller_of_a_private_person_has_no_business(client, api):
     api["/v8/premium-user/post-page/gaRPIP2m/owner-posts-list"] = {"page": {"widget_list": []}}
     api["/v8/premium-user/post-page/web/business-data/gaRPIP2m/lazy"] = {"widget_list": []}

@@ -292,7 +292,7 @@ async def dv_seller(
     """The seller behind an ad: how many personal and business ads they have, the business card (name, brand_token) and their ads.
 
     Use to judge a seller (one flat or fifty cars?) and to list their other ads. For a dealer's whole page call
-    dv_dealer with the brand_token (`dv_post` does not give one). A personal seller has no business card (`seller_kind`). No phone number or identity is exposed.
+    dv_dealer with the brand_token (`dv_post` does not give one). A personal seller has no business card (`seller_kind`); Divar no longer lists a personal seller's other ads, and a dealer's list is the first 11. No phone number or identity is exposed.
     """
 
     async def business_card() -> dict[str, Any]:
@@ -325,6 +325,10 @@ async def dv_seller(
                     "brand_token": payload.get("brand_token"),
                 }
             )
+    if not widgets and business and business.get("brand_token"):
+        # Divar's owner-posts-list now answers an empty body; the dealer page still lists the first 11 ads
+        page = await dv_dealer(business["brand_token"])
+        ads, counts["business"] = page.get("ads") or [], page.get("active_ads")
     return slim(
         {
             "token": token,
