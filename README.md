@@ -184,7 +184,7 @@ All tools start with `dv_` and are annotated read-only, except `dv_watch` and `d
 | `dv_best_for_budget` | Within a budget: best value with an explainable `deal_score` (and `reasons`) against the median of the ads that fit (price per m2 for property for sale), and the most you can get; bait / co-op / loan titles are skipped |
 | `dv_find_deals` | Ads priced well below the median of a search, no budget needed; junk prices and bait titles removed |
 | `dv_market` | Price statistics (min, quartiles, median, max) plus breakdown by district and by day |
-| `dv_appraise` | Is an ad's price (or a price you give) high or low versus similar ads: percentile, verdict ("insufficient comparables" when the call is extreme but thin), confidence |
+| `dv_appraise` | Is an ad's price (or a price you give) high or low versus similar ads (same area first, then the whole city): percentile, verdict ("insufficient comparables" when the call is extreme but thin), confidence |
 | `dv_new_since` | Ads published after a timestamp: poll with the returned `latest` to watch a search |
 | `dv_export` | The ads of a search as CSV or JSON lines |
 | `dv_nearby` | Map ads around a point (category required), nearest first, with coordinates, distance and total price |

@@ -406,6 +406,19 @@ def _same_kind(levels: list[tuple[str, dict[str, Any]]]) -> list[tuple[str, dict
     ]
 
 
+def _citywide(levels: list[tuple[str, dict[str, Any]]]) -> list[tuple[str, dict[str, Any]]]:
+    """After each level limited to districts, add the same level for the whole city (a model sold in one
+    neighbourhood has few ads, but the same model city-wide is still a fair comparison)."""
+    out = []
+    for name, sd in levels:
+        out.append((name, sd))
+        fd = sd.get("form_data") or {}
+        if "districts" in (fd.get("data") or {}):
+            wide = {**sd, "form_data": {**fd, "data": {k: v for k, v in fd["data"].items() if k != "districts"}}}
+            out.append((f"{name} (whole city)", wide))
+    return out
+
+
 async def comparables(
     data: dict[str, Any], token: str, *, need: int, pages: int, same_kind: bool = False
 ) -> tuple[list[dict[str, Any]], list[str]]:
@@ -418,7 +431,9 @@ async def comparables(
     found: dict[str, dict[str, Any]] = {}
     used: list[str] = []
     levels = crumb_searches(data)
-    for name, sd in _same_kind(levels) if same_kind else levels:
+    if same_kind:
+        levels = _citywide(_same_kind(levels))
+    for name, sd in levels:
         q = Q([city], None, sd.get("query", ""), ((sd.get("form_data") or {}).get("data")) or {})
         got = await fetch_cards(q, pages=pages)
         used.append(name)

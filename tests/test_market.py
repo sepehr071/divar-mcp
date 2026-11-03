@@ -82,7 +82,8 @@ async def test_dv_appraise_never_widens_past_the_brand(client, ref):
     light_routes(ref)  # every level returns the same 14 ads, so the loop would walk the whole breadcrumb
     ref["/v8/posts-v2/web/gaRPIP2m"] = fixture("post_car.json")
     out = (await client.call_tool("dv_appraise", {"token": "gaRPIP2m", "pages": 1})).structured_content
-    assert out["basis"] == ["پژو 206 تیپ ۳", "پژو 206", "پژو"]  # not "خودرو سواری و وانت" or wider
+    basis = [b for b in out["basis"] if not b.endswith("(whole city)")]
+    assert basis == ["پژو 206 تیپ ۳", "پژو 206", "پژو"]  # not "خودرو سواری و وانت" or wider
 
 
 async def test_dv_appraise_far_off_price_is_low_confidence(client, ref):
