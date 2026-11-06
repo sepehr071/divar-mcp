@@ -840,26 +840,20 @@ async def fetch_cards(
 
 City = Annotated[
     str,
-    Field(
-        description="City name or id; several comma-separated, e.g. 'تهران', 'mashhad', 'تهران,کرج'.", max_length=200
-    ),
+    Field(description="City name or id; several comma-separated, e.g. 'تهران,کرج'.", max_length=200),
 ]
 Category = Annotated[
     str | None,
-    Field(
-        description="Category slug or Persian name, e.g. 'light' (cars), 'apartment-sell', 'apartment-rent', 'mobile-phones'."
-    ),
+    Field(description="Category slug or Persian name, e.g. 'light' (cars), 'apartment-rent', 'mobile-phones'."),
 ]
 QueryText = Annotated[
     str | None, Field(description="Free text in title or description, e.g. 'پراید 111'.", max_length=200)
 ]
-Districts = Annotated[
-    list[str] | None, Field(description="Neighbourhood names or ids in the one city, e.g. ['ونک'].", max_length=20)
-]
+Districts = Annotated[list[str] | None, Field(description="Neighbourhood names or ids, e.g. ['ونک'].", max_length=20)]
 MinPrice = Annotated[int | None, Field(ge=0, description="Toman; monthly rent in rent categories.")]
 MaxPrice = Annotated[int | None, Field(ge=0, description="Toman; monthly rent in rent categories.")]
-MinDeposit = Annotated[int | None, Field(ge=0, description="Rent categories: deposit (ودیعه) in Toman.")]
-MaxDeposit = Annotated[int | None, Field(ge=0, description="Rent categories: deposit (ودیعه) in Toman.")]
+MinDeposit = Annotated[int | None, Field(ge=0, description="Rent deposit (ودیعه), Toman.")]
+MaxDeposit = Annotated[int | None, Field(ge=0, description="Rent deposit (ودیعه), Toman.")]
 Brand = Annotated[list[str] | None, Field(description="Vehicles, phones: brand/model, e.g. ['پژو 206'].")]
 HasPhoto = Annotated[bool | None, Field(description="Only ads with photos.")]
 Recent = Annotated[str | None, Field(description="Published within '3h', '12h', '1d', '3d' or '7d'.")]
@@ -867,8 +861,7 @@ Filters = Annotated[
     dict[str, Any] | None,
     Field(
         description=(
-            "Other category filters (keys from dv_filters): {'size': {'min': 80, 'max': 120}, 'rooms': ['دو'], "
-            "'parking': true}. Unknown keys are returned in `ignored`."
+            "Category filters (keys from dv_filters), e.g. {'size': {'min': 80, 'max': 120}, 'parking': true}."
         )
     ),
 ]
@@ -883,6 +876,6 @@ Token = Annotated[
         min_length=6,
         max_length=16,
         pattern=r"^[A-Za-z0-9_-]+$",
-        description="Ad token: the last part of divar.ir/v/<slug>/<token> or `token` of a search result, e.g. 'gaRPIP2m'.",
+        description="Ad token, e.g. 'gaRPIP2m'.",
     ),
 ]

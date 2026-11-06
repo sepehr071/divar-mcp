@@ -43,20 +43,16 @@ def _stamp() -> str:
 async def dv_watch(
     action: Annotated[
         Literal["create", "check", "list", "delete"],
-        Field(
-            description="'create' saves a search, 'check' returns the ads newer than the last check and moves the mark, 'list' shows the saved searches, 'delete' removes one."
-        ),
+        Field(description="'create' saves a search, 'check' returns ads newer than the last check, 'list', 'delete'."),
     ],
     watch_id: Annotated[
         str | None,
         Field(
-            description="check / delete: the id from 'create' or 'list'. check without it checks every watch.",
+            description="check / delete: id from 'create' or 'list'; check without it checks all.",
             max_length=16,
         ),
     ] = None,
-    name: Annotated[
-        str | None, Field(description="create: a label for you, e.g. 'cheap Pride in Karaj'.", max_length=80)
-    ] = None,
+    name: Annotated[str | None, Field(description="create: a label.", max_length=80)] = None,
     city: City = "تهران",
     category: Category = None,
     query: QueryText = None,
@@ -67,14 +63,12 @@ async def dv_watch(
     filters: Filters = None,
     keywords: Keywords = None,
     exclude: Exclude = None,
-    limit: Annotated[int, Field(ge=1, le=50, description="check: max new ads per watch.")] = 10,
+    limit: Annotated[int, Field(ge=1, le=50, description="check: max ads per watch.")] = 10,
 ) -> dict[str, Any]:
     """Save a search and later get only the ads that appeared since the last check; stored in a local file, nothing is pushed.
 
-    `create` takes the search arguments of dv_search (validated once, then stored with the current time as the mark).
-    `check` runs dv_new_since for the watch and moves the mark to the newest ad it returned, so the next check shows only
-    newer ads; it does not run by itself: call it from a schedule or when asked. The file is `~/.divar-mcp/state.json`
-    (override with DIVAR_MCP_STATE); it holds only your searches. Next: dv_post for a new ad.
+    Nothing runs by itself: call `check` on a schedule or when asked. File: `~/.divar-mcp/state.json`
+    (DIVAR_MCP_STATE).
     """
     state = store.load()
     watches = state["watches"]
@@ -149,14 +143,12 @@ async def dv_price_trend(
     brand_model: Brand = None,
     filters: Filters = None,
     pages: Pages = 3,
-    record: Annotated[bool, Field(description="Store today's median so later calls can show the trend.")] = True,
+    record: Annotated[bool, Field(description="Store today's point.")] = True,
 ) -> dict[str, Any]:
     """The median asking price of a search over the days you have checked it: records one point per day in a local file.
 
-    Divar keeps no price history, so the trend starts with your first call and grows each day you call it again
-    (a scheduler helps). Each call scans the newest `pages` pages, stores median / quartiles / count for today (a second
-    call the same UTC day replaces it) and returns the last 90 points with `change_pct` since the previous day. Use a
-    narrow query: a mixed category's median is noise. For a one-off distribution use dv_market.
+    Divar keeps no history: the trend starts with your first call. Returns the last 90 points with `change_pct`.
+    Use a narrow query.
     """
     q = await build_query(city, category, query, districts=districts, brand_model=brand_model, filters=filters)
     cards = (await fetch_cards(q, pages=pages))["cards"]

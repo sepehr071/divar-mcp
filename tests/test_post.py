@@ -37,7 +37,7 @@ async def test_dv_post_sale_ad(client, api):
     ]
     assert out["photos"] == 9 and out["approximate_location"] is True and 35 < out["lat"] < 36 and 51 < out["lon"] < 52
     assert out["seller_type"] == "personal" and out["chat"] is True and out["url"] == "https://divar.ir/v/gaRPIP2m"
-    assert len(out["description"]) <= 1501 and out["description"].startswith("سلام علیکم")
+    assert len(out["description"]) <= 801 and out["description"].startswith("سلام علیکم")
     full = (
         await client.call_tool("dv_post", {"token": "gaRPIP2m", "full_text": True, "max_images": 0})
     ).structured_content

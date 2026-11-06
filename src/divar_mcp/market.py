@@ -67,12 +67,7 @@ async def dv_market(
 ) -> dict[str, Any]:
     """Asking-price statistics of a search: min, p10, p25, median, p75, p90, max, mean; split by district and by day.
 
-    Scans the newest `pages` pages (about 25 ads each) and drops negotiable and suspect prices (`excluded`) and, from the statistics, prices under a tenth of the median. Sale
-    searches give `price`; rentals give `rent` and `deposit` (Toman). `by_district` lists the busiest neighbourhoods
-    with ad count and median; `per_day` shows how many ads were posted per UTC date and their median, a rough
-    trend. These are what sellers ask, not what deals close at, and a sample of the newest ads, not the whole
-    market: use a narrow query or filters (one model, one area) for a meaningful median. Next: dv_cheapest,
-    dv_best_for_budget, dv_appraise.
+    A sample of the newest `pages` pages. Use a narrow query (one model, one area). Next: dv_cheapest, dv_appraise.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=max_price,
@@ -129,14 +124,14 @@ async def dv_appraise(
             min_length=6,
             max_length=16,
             pattern=r"^[A-Za-z0-9_-]+$",
-            description="An ad to appraise: its price is ranked against similar ads. Omit to appraise a price you give.",
+            description="Ad to appraise; omit to appraise `price`.",
         ),
     ] = None,
     price: Annotated[
         int | None,
         Field(
             ge=1,
-            description="Without a token: the price in Toman to check against the search below (monthly rent for rent categories).",
+            description="Without a token: Toman price to check (monthly rent in rent categories).",
         ),
     ] = None,
     city: City = "تهران",
@@ -145,15 +140,11 @@ async def dv_appraise(
     districts: Districts = None,
     brand_model: Brand = None,
     filters: Filters = None,
-    pages: Annotated[int, Field(ge=1, le=5, description="Pages scanned per comparison level.")] = 3,
+    pages: Annotated[int, Field(ge=1, le=5, description="Pages per comparison level.")] = 3,
 ) -> dict[str, Any]:
     """Is an ad's price (or a price you have in mind) high or low compared with similar ads? Percentile, verdict, confidence.
 
-    With a `token`: compares its price (or monthly rent) with similar ads found from its own breadcrumb (brand +
-    district, widening step by step). Without: give `price` plus category/query/filters. Returns `percentile` (share
-    of comparable ads that are cheaper), `verdict` ('insufficient comparables', with no lean either way, when confidence is low and the call would be "well below/above market"), `vs_median_pct`, the fair band p25-p75 and `confidence`
-    (high: 40+ comparable ads at the first level, medium: 15+, else low). Comparisons ignore year, mileage, area and
-    condition: refine with `filters`/`query`, or dv_compare against specific ads. Asking prices only.
+    Give `token`, or `price` with search arguments. Ignores year, mileage and condition: refine with `filters`.
     """
     subject: dict[str, Any]
     if token:

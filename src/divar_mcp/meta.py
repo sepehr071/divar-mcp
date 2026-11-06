@@ -15,9 +15,7 @@ from .registry import tool
 async def dv_status() -> dict[str, Any]:
     """Is Divar reachable and how fast: version, a live latency check, caches and local watch state.
 
-    Call first when other tools fail (it tells a blocked network from a bad argument). The check is one small
-    request to Divar. The server instructions describe the usual tool order (cities and categories, then dv_search,
-    then dv_post).
+    Call when other tools fail: tells a blocked network from a bad argument.
     """
     t0 = time.monotonic()
     try:

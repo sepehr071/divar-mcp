@@ -153,7 +153,7 @@ It is a standard stdio MCP server: run `uvx divar-mcp`, or `pip install divar-mc
 
 ## Tools
 
-An ad card has `token`, `title`, `price` (sale) or `deposit` + `rent` (`rent` 0 with `full_deposit` means رهن کامل), `info` (mileage, condition...), `district`, `seller` (agency label), `age_h` (hours since the last bump), `photos`, `image` (thumbnail URL, only from `dv_search` with `thumbnails`), `chat`, `tag` (paid promotion), `url`, and `suspect_price` when the price looks like a placeholder. Absent flags mean false. Default page size is 10 to 20 ads.
+An ad card has `token`, `title`, `price` (sale) or `deposit` + `rent` (`rent` 0 with `full_deposit` means رهن کامل), `info` (mileage, condition...), `district`, `seller` (agency label), `age_h` (hours since the last bump), `photos`, `image` (thumbnail URL, only from `dv_search` with `thumbnails`), `tag` (paid promotion), and `suspect_price` when the price looks like a placeholder. The ad page is `https://divar.ir/v/<token>` (list cards carry no `url` or `chat`; `dv_post` has both). Absent flags mean false. Default page size is 10 to 20 ads.
 
 All tools start with `dv_` and are annotated read-only, except `dv_watch` and `dv_price_trend`, which write only to a local file.
 

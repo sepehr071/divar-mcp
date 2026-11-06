@@ -35,16 +35,13 @@ async def dv_categories(
     ] = None,
     parent: Annotated[
         str | None,
-        Field(
-            description="List the direct children of this category slug, e.g. 'vehicles' or 'real-estate'. Omit for the 10 top-level categories."
-        ),
+        Field(description="List the children of this slug, e.g. 'vehicles'. Omit for the 10 top-level categories."),
     ] = None,
-    limit: Annotated[int, Field(ge=1, le=100, description="Max categories to return.")] = 30,
+    limit: Annotated[int, Field(ge=1, le=100)] = 30,
 ) -> dict[str, Any]:
     """The Divar category tree (236 nodes, up to 4 levels): slug, Persian name, path and whether it is a leaf.
 
-    Use to find the `category` slug for dv_search and the other tools (leaf slugs such as `light` = cars and vans,
-    `apartment-sell`, `apartment-rent`, `mobile-phones`). Filters exist per category: dv_filters.
+    Gives the `category` slug for the search tools (`light` = cars and vans). Next: dv_filters.
     """
     flat = await categories()
     if query:
@@ -67,11 +64,8 @@ async def dv_categories(
 async def dv_filters(category: Category, city: City = "تهران") -> dict[str, Any]:
     """Every filter a category supports: key, type, Persian label, unit and the allowed options.
 
-    Use before dv_search when you need more than price and district. Pass the keys in `filters`:
-    number_range -> {'size': {'min': 80, 'max': 120}}, repeated_string -> {'rooms': ['دو']}, str -> {'gearbox': 'automatic'},
-    boolean -> {'parking': true}. `lazy` filters (districts, brand_model) have long option lists: use
-    dv_filter_options or the `districts` / `brand_model` arguments of dv_search. Rent categories filter `credit`
-    (deposit) and `rent`, sale categories `price`; both in Toman.
+    Pass keys in dv_search `filters`: number_range {'size': {'min': 80}}, repeated_string {'rooms': ['دو']},
+    str 'automatic', boolean true. `lazy` options: dv_filter_options.
     """
     slug = await resolve_category(category)
     if not slug:
@@ -113,7 +107,7 @@ async def dv_filter_options(
     filter: Annotated[
         str,
         Field(
-            description="Filter key from dv_filters, usually 'brand_model' (cars, phones, ...) or 'districts'.",
+            description="Filter key from dv_filters, usually 'brand_model' or 'districts'.",
             max_length=40,
         ),
     ] = "brand_model",
@@ -121,21 +115,20 @@ async def dv_filter_options(
     query: Annotated[
         str | None,
         Field(
-            description="Text to look up inside the filter, e.g. 'سمند' or 'ونک'. Without it the whole list (or one brand) is returned.",
+            description="Text to look up in the filter, e.g. 'سمند'.",
             max_length=60,
         ),
     ] = None,
     brand: Annotated[
         str | None,
-        Field(description="brand_model only: a brand key (e.g. 'Peugeot') to list its models.", max_length=60),
+        Field(description="brand_model: a brand key, e.g. 'Peugeot', to list its models.", max_length=60),
     ] = None,
-    limit: Annotated[int, Field(ge=1, le=200, description="Max options to return.")] = 40,
+    limit: Annotated[int, Field(ge=1, le=200)] = 40,
 ) -> dict[str, Any]:
     """Allowed values of a filter: brand and model keys (161 car brands), districts, or any option list.
 
-    With `query` it uses Divar's own typed search (best way to turn 'پراید' into the key 'Pride 111'). Without it:
-    all brands (key, title, model count), or the models of one `brand`. Pass the keys to dv_search as
-    `brand_model` / `filters`.
+    `query` turns 'پراید' into the key 'Pride 111'; without it: all brands, or the models of one `brand`. Pass the
+    keys to dv_search as `brand_model` / `filters`.
     """
     slug = await resolve_category(category)
     if not slug:
@@ -172,8 +165,7 @@ async def dv_suggest(
 ) -> dict[str, Any]:
     """What Divar's search box would suggest for some text, and which categories the text belongs to.
 
-    Use to find the right `category` and a good `query` when the user only gave a product name. Each suggestion has
-    the category slug and a probability; `categories` are guesses for the bare word. Next: dv_search.
+    Use to find `category` and `query` from a product name. Next: dv_search.
     """
     c = (await resolve_cities(city))[0]
     sug_body = {
@@ -269,10 +261,8 @@ async def dv_parse_query(
 ) -> dict[str, Any]:
     """Turn a plain Persian request into dv_search arguments: city, neighbourhoods, price bounds, category and leftover words.
 
-    A rule-based helper, not a language model: it finds a city and its neighbourhoods by name, amounts with
-    میلیارد / میلیون / هزار (with زیر, کمتر از, تا, بالای, حداقل or از ... تا ...), a category from Divar's own guess for the
-    leftover words, and moves rental words (اجاره, رهن) to the matching rent category. `search` can be passed to
-    dv_search as it is; check `notes` for what was assumed. An area like '80 متری' becomes a `size` filter of ±10%. Rooms, year or mileage are not extracted: use dv_filters.
+    Rule-based. Pass `search` to dv_search as it is; `notes` say what was assumed. Rooms, year and mileage are not
+    extracted.
     """
     t = fold(text).replace("٫", ".")
     notes: list[str] = []

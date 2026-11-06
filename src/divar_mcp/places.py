@@ -24,16 +24,15 @@ async def dv_cities(
     query: Annotated[
         str | None,
         Field(
-            description="City name or slug, Persian or Latin, e.g. 'مشهد', 'kar'. Omit for the 7 biggest cities.",
+            description="Name or slug, e.g. 'مشهد', 'kar'. Omit for the 7 biggest cities.",
             max_length=60,
         ),
     ] = None,
-    limit: Annotated[int, Field(ge=1, le=50, description="Max cities to return.")] = 10,
+    limit: Annotated[int, Field(ge=1, le=50)] = 10,
 ) -> dict[str, Any]:
     """City ids for a name (1,177 cities; Tehran is 1, Mashhad 3). Returns id, name, URL slug, province id and centre.
 
-    Use first when you need a `city` for another tool (they also accept the name directly). Persian letter variants
-    (ي/ی, ك/ک) are matched. Next: dv_districts for the neighbourhoods of a city, dv_search to look for ads.
+    Other tools also take the city name directly. Next: dv_districts, dv_search.
     """
     allc = await cities()
     if query:
@@ -47,12 +46,11 @@ async def dv_cities(
 async def dv_districts(
     city: City = "تهران",
     query: Annotated[str | None, Field(description="Part of a neighbourhood name, e.g. 'ونک'.", max_length=60)] = None,
-    limit: Annotated[int, Field(ge=1, le=100, description="Max neighbourhoods to return.")] = 30,
+    limit: Annotated[int, Field(ge=1, le=100)] = 30,
 ) -> dict[str, Any]:
     """Neighbourhoods (محله) of one city with ids, centre point and the main streets inside (Tehran has about 450).
 
-    Use to get the district ids for a `districts` filter, or to pick coordinates for dv_nearby. dv_search and the other
-    search tools take district names directly. Next: dv_neighbours for adjacent areas.
+    Search tools also take district names directly. Next: dv_neighbours, dv_nearby.
     """
     c = (await resolve_cities(city))[0]
     rows = await district_list(c["id"])
@@ -74,9 +72,8 @@ async def dv_neighbours(
 ) -> dict[str, Any]:
     """Neighbourhoods adjacent to a district, to widen a neighbourhood search to the surrounding area.
 
-    `districts` is Divar's own adjacency list, which is short for some areas (Vanak lists one). `nearest` adds the
-    closest districts of `city` by centroid distance (within 3 km, up to 6) so a widened search is not too narrow.
-    Pass the ids (or names) as `districts` to dv_search.
+    `districts` is Divar's own (often short) list; `nearest` adds up to 6 districts within 3 km. Pass them as
+    `districts` to dv_search.
     """
     data = await api(f"/places/districts/{district_id}/neighbours")
     rows = [
@@ -120,8 +117,7 @@ async def dv_locate(
 ) -> dict[str, Any]:
     """The city, neighbourhood and street address of a GPS point.
 
-    Gives the city id and district id to use as filters. The street address is only known inside covered areas.
-    Next: dv_nearby for ads around the point.
+    Next: dv_nearby.
     """
 
     async def address() -> dict[str, Any]:
@@ -150,12 +146,12 @@ async def dv_place_search(
     query: Annotated[
         str, Field(min_length=2, max_length=80, description="Landmark, mall, street or area, e.g. 'برج میلاد', 'ونک'.")
     ],
-    lat: Annotated[float, Field(ge=24, le=40, description="Map centre latitude to bias results.")] = 35.7,
-    lon: Annotated[float, Field(ge=43, le=64, description="Map centre longitude to bias results.")] = 51.4,
+    lat: Annotated[float, Field(ge=24, le=40, description="Bias towards this point.")] = 35.7,
+    lon: Annotated[float, Field(ge=43, le=64)] = 51.4,
 ) -> dict[str, Any]:
     """Map autocomplete: turn a landmark or street name into coordinates and a bounding box.
 
-    Use the returned lat/lon with dv_nearby (ads around a place) or dv_locate. Persian text works best.
+    Next: dv_nearby or dv_locate with the lat/lon.
     """
     body = {
         "query": query,
@@ -192,9 +188,7 @@ async def dv_place_mapping(
 ) -> dict[str, Any]:
     """Convert old Divar place ids to the current ones (Divar merged and renumbered places).
 
-    Use when an id from an old link or saved data returns nothing. `mapping` has the renumbered ids only; `unchanged`
-    are current city ids; `unverified` ids are not in the renumber table and are not cities (districts cannot be
-    checked here: see dv_districts).
+    Use when an old id returns nothing. `unverified` ids are neither renumbered nor cities.
     """
     table = (await api("/places/mapping")).get("ids") or {}
     known = {c["id"] for c in await cities()}
@@ -239,21 +233,16 @@ async def dv_boundary(
     district: Annotated[
         str | None,
         Field(
-            description="A neighbourhood name or id (e.g. 'ونک', '315') to get its polygon. Omit for the city's bounding box and its neighbourhoods.",
+            description="Neighbourhood name or id for its polygon, e.g. 'ونک'.",
             max_length=60,
         ),
     ] = None,
-    max_points: Annotated[
-        int, Field(ge=8, le=500, description="Max vertices per polygon ring (the full outline is thinned).")
-    ] = 60,
-    limit: Annotated[int, Field(ge=1, le=100, description="Max neighbourhoods listed in the overview.")] = 30,
+    max_points: Annotated[int, Field(ge=8, le=500, description="Max vertices per ring.")] = 60,
+    limit: Annotated[int, Field(ge=1, le=100, description="Max neighbourhoods in the overview.")] = 30,
 ) -> dict[str, Any]:
     """Neighbourhood borders of a city from Divar's GeoJSON: the city's bounding box, or one neighbourhood's polygon.
 
-    Without `district`: the city bounding box [min_lon, min_lat, max_lon, max_lat] and the neighbourhoods with id, centre
-    and box. With `district`: a GeoJSON Feature of that neighbourhood (coordinates [lon, lat], thinned to `max_points`
-    per ring, so the shape is approximate). Use to draw an area or test a point against it; for a point's own
-    neighbourhood use dv_locate. Next: dv_nearby with the centre.
+    Without `district`: the city box and its neighbourhoods. With it: a thinned GeoJSON Feature ([lon, lat]).
     """
     c = (await resolve_cities(city))[0]
     if c.get("province"):

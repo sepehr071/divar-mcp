@@ -26,7 +26,7 @@ from .core import (
 from .http import ApiError, api
 from .registry import tool
 
-FullText = Annotated[bool, Field(description="Do not cut the description (default cuts at 1500 characters).")]
+FullText = Annotated[bool, Field(description="Do not cut the description (default cuts at 800 characters).")]
 
 _PRICE_TITLES = {"ودیعه", "اجارهٔ ماهانه", "اجاره ماهانه", "قیمت", "قیمت پایه", "قیمت کل", "قیمت هر متر"}
 _SHARED = re.compile(r"هم[\s\u200c]?(?:خانه|خونه)|شریکی")
@@ -134,7 +134,8 @@ def parse_post(token: str, data: dict[str, Any], *, full_text: bool = False, max
         "city": city.get("name"),
         "city_id": to_int(city.get("city_id")),
         "district": (seo.get("web_info") or {}).get("district_persian"),
-        "location_text": where,
+        # relative time + city + district: only worth its tokens when there is no district
+        "location_text": None if (seo.get("web_info") or {}).get("district_persian") else where,
         # Jalali text only when it could not be converted; `updated` only when it differs from the publication
         "published": published.group(1).strip() if published and not _iso(published) else None,
         "published_at": _iso(published),
@@ -148,7 +149,7 @@ def parse_post(token: str, data: dict[str, Any], *, full_text: bool = False, max
         "specs": specs,
         "features": features,
         "missing_features": missing,
-        "description": _clip(desc, None if full_text else 1500),
+        "description": _clip(desc, None if full_text else 800),
         "photos": web.get("image_count") or len(images),
         "images": images[:max_images],
         "lat": round(pt["latitude"], 5) if "latitude" in pt else None,
@@ -170,15 +171,12 @@ async def fetch_post(token: str) -> dict[str, Any]:
 async def dv_post(
     token: Token,
     full_text: FullText = False,
-    max_images: Annotated[int, Field(ge=0, le=30, description="How many full-size image URLs to return.")] = 6,
+    max_images: Annotated[int, Field(ge=0, le=30, description="Full-size image URLs to return.")] = 6,
 ) -> dict[str, Any]:
     """Everything public about one ad: price in Toman, specs, features, description, images, map position, seller type.
 
-    Prices: `price` (sale) or `deposit` + `rent` (rental; rent 0 + full_deposit = رهن کامل); `negotiable` true when the
-    seller gave none; `suspect_price` marks placeholder prices. `specs` are the Persian spec rows of the ad (mileage,
-    year, area, rooms...). `lat`/`lon` are fuzzed by about 500 m for most categories. `shared_housing` flags همخانه
-    ads. No phone number: Divar shows it only to logged-in users, use `url` to contact the seller.
-    Next: dv_similar, dv_appraise (is the price fair), dv_seller, dv_compare.
+    `specs` are the ad's Persian spec rows. No phone number (login only): contact the seller via `url`.
+    Next: dv_similar, dv_appraise, dv_seller, dv_compare.
     """
     return parse_post(token, await fetch_post(token), full_text=full_text, max_images=max_images)
 
@@ -187,12 +185,12 @@ async def dv_post(
 async def dv_posts(
     tokens: Annotated[
         list[str],
-        Field(min_length=1, max_length=10, description="Ad tokens, e.g. ['gaRPIP2m', 'gaRPYuZk'] (at most 10)."),
+        Field(min_length=1, max_length=10, description="Ad tokens."),
     ],
 ) -> dict[str, Any]:
     """Details of up to 10 ads in one call (compact: specs and one image, description cut at 300 characters).
 
-    Use to read a shortlist from dv_search. An ad that was removed shows an `error` instead of failing the call.
+    A removed ad shows an `error` instead of failing the call.
     """
 
     async def one(t: str) -> dict[str, Any]:
@@ -218,14 +216,11 @@ def _unit_price(a: dict[str, Any]) -> int | None:
 
 @tool("Compare ads")
 async def dv_compare(
-    tokens: Annotated[list[str], Field(min_length=2, max_length=6, description="2 to 6 ad tokens to compare.")],
+    tokens: Annotated[list[str], Field(min_length=2, max_length=6, description="Ad tokens.")],
 ) -> dict[str, Any]:
     """Side by side: the price of each ad and only the specs that differ (the identical ones are listed once).
 
-    Gives `cheapest`, per other ad `cheapest_saves_pct` (how much less the cheapest costs than that ad; per metre when
-    every priced ad has an area, see `compared_by`), the differing
-    spec rows with each ad's value, shared specs, and features one ad has and another lacks. Works across ads of the
-    same kind (two cars, two flats); specs are the Persian rows of each ad.
+    Gives `cheapest` and `cheapest_saves_pct` (per m2 when every ad has an area). For ads of one kind.
     """
     uniq = list(dict.fromkeys(tokens))
     if len(uniq) < 2:
@@ -287,12 +282,12 @@ def _count(text: str) -> int | None:
 @tool("Seller and their ads")
 async def dv_seller(
     token: Token,
-    limit: Annotated[int, Field(ge=1, le=50, description="Max of the seller's other ads to return.")] = 12,
+    limit: Annotated[int, Field(ge=1, le=50)] = 12,
 ) -> dict[str, Any]:
     """The seller behind an ad: how many personal and business ads they have, the business card (name, brand_token) and their ads.
 
-    Use to judge a seller (one flat or fifty cars?) and to list their other ads. For a dealer's whole page call
-    dv_dealer with the brand_token (`dv_post` does not give one). A personal seller has no business card (`seller_kind`); Divar no longer lists a personal seller's other ads, and a dealer's list is the first 11. No phone number or identity is exposed.
+    A personal seller has no business card and Divar no longer lists their other ads. Next: dv_dealer with the
+    brand_token.
     """
 
     async def business_card() -> dict[str, Any]:
@@ -356,9 +351,7 @@ async def dv_dealer(
 ) -> dict[str, Any]:
     """A business account's public page: name, active ad count, member since and its first 11 ads.
 
-    Divar's web API gives only the first batch of a dealer's ads (no paging); search with the dealer's name or use
-    the ad filters for more. Ads are compact rows (token, title, price, district, age, photos, tag); the ad link is
-    `url_prefix` + token and `age_h` is hours since the last bump.
+    No paging: for more, search with the dealer's name.
     """
     data = await api(f"/premium-user/web/business/brand-landing/{brand_token}", body={})
     name = count = joined = None
@@ -446,15 +439,13 @@ async def comparables(
 @tool("Similar ads")
 async def dv_similar(
     token: Token,
-    limit: Annotated[int, Field(ge=1, le=50, description="Max similar ads.")] = 10,
+    limit: Annotated[int, Field(ge=1, le=50)] = 10,
     pages: Annotated[int, Field(ge=1, le=3, description="Pages scanned per breadcrumb level.")] = 1,
 ) -> dict[str, Any]:
     """Ads similar to one ad: same brand/model (or category) and neighbourhood, widening step by step until enough are found.
 
-    Divar has no similar-ads endpoint; this searches the ad's own breadcrumb (brand+district, brand, category+district,
-    category). `basis` names the levels used, narrowest first. Sorted newest first. For property, ads priced over 5x or under a fifth
-    of this ad, or whose title area is under 0.4x or over 2.5x of its area (a 950B bulk listing next to a 180 m flat), are
-    left out and counted in `excluded_outliers`. Next: dv_compare, dv_appraise.
+    `basis` names the levels searched, narrowest first. Property far off in price or area is counted in
+    `excluded_outliers`. Next: dv_compare, dv_appraise.
     """
     data = await fetch_post(token)
     cards, used = await comparables(data, token, need=limit, pages=pages)

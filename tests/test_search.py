@@ -37,7 +37,7 @@ async def test_dv_search_returns_compact_cards(client, ref):
     car = next(a for a in out["ads"] if a["token"] == "gaRPIP2m")
     assert car["price"] == 998_000_000 and car["info"] == "۱۳۸,۰۰۰ کیلومتر" and car["district"] == "وردآورد"
     assert "posted" not in car and car["age_h"] == 0.1 and car["photos"] == 9
-    assert car["url"] == "https://divar.ir/v/gaRPIP2m" and car["chat"] is True and "image" not in car
+    assert "url" not in car and "chat" not in car and "image" not in car  # url = divar.ir/v/<token> (INSTRUCTIONS)
     assert "tag" not in car and "negotiable" not in car and "suspect_price" not in car
     assert out["next_cursor"] == CURSOR_1 and out["web_url"] == "https://divar.ir/s/tehran/car"
 

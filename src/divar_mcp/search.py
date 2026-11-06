@@ -75,23 +75,19 @@ async def dv_search(
     sort: Annotated[
         Literal["newest", "cheapest", "expensive"],
         Field(
-            description="'newest' is Divar's own order (default, pages by cursor). 'cheapest' / 'expensive' sort the ads fetched in this call by price (Divar cannot sort by price)."
+            description="'newest' is Divar's order (pages by cursor); 'cheapest' / 'expensive' sort only the ads fetched in this call."
         ),
     ] = "newest",
     pages: Pages = 1,
     limit: Limit = 20,
     cursor: Cursor = None,
     thumbnails: Annotated[  # read by server.compact, which strips `image` from ad rows unless this is true
-        bool, Field(description="Include each ad's thumbnail URL in `image` (about 40 tokens per ad).")
+        bool, Field(description="Add each ad's thumbnail URL as `image` (~40 tokens per ad).")
     ] = False,
 ) -> dict[str, Any]:
     """Search Divar ads in one or more cities by category, text and filters; compact cards, prices in Toman.
 
-    Card fields are described in the server instructions; `age_h` is hours since the last bump, `image` comes only
-    with `thumbnails`, and `suspect_price` includes 'outlier' (at or under a tenth of the fetched median, 5+ priced
-    ads). Newest first; the first 1-3 rows may be promoted older ads. Continue with `next_cursor` as `cursor`.
-    Filters the category lacks come back in `ignored`; an empty Persian query is retried once with letters folded.
-    Next: dv_post, dv_compare, dv_cheapest, dv_market.
+    Filters the category lacks come back in `ignored`. Next: dv_post, dv_compare, dv_cheapest, dv_market.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=max_price,
@@ -138,8 +134,7 @@ async def dv_count(
 ) -> dict[str, Any]:
     """How many active ads match a search, in one cheap call (capped: 10,000 means '10,000 or more').
 
-    Use to size a market, to test whether a filter combination is too narrow, or to compare cities and districts
-    before fetching ads. Same arguments as dv_search.
+    Use to size a market or to test whether filters are too narrow before fetching ads.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=max_price,
@@ -181,22 +176,20 @@ async def dv_cheapest(
         int | None,
         Field(
             ge=0,
-            description="Drop ads priced below this many Toman (seller junk prices like 1,000 are already flagged and skipped).",
+            description="Drop ads priced below this (Toman).",
         ),
     ] = None,
     include_outliers: Annotated[
         bool,
-        Field(description="Also list ads priced under 10% of the scanned median (usually deposits, parts or bait)."),
+        Field(description="Also list ads under 10% of the median (usually deposits, parts or bait)."),
     ] = False,
     pages: Pages = 3,
     limit: Limit = 10,
 ) -> dict[str, Any]:
     """The cheapest ads of a search, cheapest first. Skips negotiable ads, placeholder or absurd prices and far-below-median outliers.
 
-    Divar cannot sort by price, so this scans the newest `pages` pages (about 25 ads each) and ranks them: raise
-    `pages` for a wider scan or narrow with filters. Rent categories rank by monthly rent (deposit shown too). Ads
-    under 10% of the median (`include_outliers` shows them) are usually not the thing searched for: a 100,000 Toman
-    'car' is a transfer slip or a deposit. The answer says how many ads were scanned and skipped. Next: dv_post, dv_compare.
+    Divar cannot sort by price: this ranks the newest `pages` pages (raise it for a wider scan). Rent categories
+    rank by monthly rent. Next: dv_post, dv_compare.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=max_price, brand_model=brand_model,
@@ -225,9 +218,7 @@ async def dv_cheapest(
 
 @tool("Best ads for a budget")
 async def dv_best_for_budget(
-    budget: Annotated[
-        int, Field(ge=1, description="Maximum price in Toman (rent categories: monthly rent), e.g. 1500000000.")
-    ],
+    budget: Annotated[int, Field(ge=1, description="Max price in Toman (rent categories: monthly rent).")],
     city: City = "تهران",
     category: Category = None,
     query: QueryText = None,
@@ -243,15 +234,11 @@ async def dv_best_for_budget(
     pages: Pages = 3,
     limit: Annotated[int, Field(ge=1, le=50, description="Ads per list.")] = 8,
 ) -> dict[str, Any]:
-    """Within a budget: the best-value ads (furthest below their peers' median) and the most you can get (closest to the budget).
+    """Within a budget: the best-value ads (furthest below their peers' median) and the ads closest to the budget.
 
-    Scans the newest `pages` pages capped at `budget`. Each `best_value` ad has a `deal_score` (0-100) with `reasons`
-    (distance below `budget_median`, photos, freshness; penalties for prices over 70% under the median and for notice,
-    parking or co-op titles). Ads under 20% of the uncapped `market_median` and bait titles (وامدار, قدرالسهم, اقساط,
-    پیش\u200cفروش...; kept if the word is in `query` / `keywords`) are dropped into `skipped_implausible`. Property for
-    sale ranks by price per m2; the top 6 ad pages are opened for publish time, floor, parking and elevator (the
-    `caveat` says the rest are unchecked). An unrealistic budget returns an empty `best_value` with a `note`. Use a
-    narrow query or brand: a mixed category's median means nothing. Next: dv_appraise, dv_post.
+    `best_value` ads carry `deal_score` (0-100) and `reasons`; bait titles and implausible prices are skipped.
+    Property for sale ranks per m2. A `closest_to_budget` ad already in `best_value` shows only token and price.
+    Use a narrow query. Next: dv_appraise, dv_post.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=budget, brand_model=brand_model,
@@ -282,6 +269,7 @@ async def dv_best_for_budget(
     )
     best = sorted(scored, key=lambda c: (-c["deal_score"], -c.get("photos", 0), c.get("age_h", 1e9)))
     closest = sorted(fit, key=lambda c: -(main_price(c) or 0))
+    shown = {c["token"] for c in best[:limit]}
     return slim(
         {
             **q.head(),
@@ -301,7 +289,11 @@ async def dv_best_for_budget(
             if not fit_all
             else None,
             "best_value": best[:limit],
-            "closest_to_budget": closest[:limit],
+            # an ad already shown in best_value is repeated as token + price only
+            "closest_to_budget": [
+                c if c["token"] not in shown else {k: c[k] for k in ("token", "price", "deposit", "rent") if k in c}
+                for c in closest[:limit]
+            ],
             "caveat": _CAVEAT,
             "next_cursor": inside["next_cursor"],
         }
@@ -407,7 +399,7 @@ def deal_score(c: dict[str, Any], median: int | None, query: str | None = None, 
             why.append(f"only re-bumped: first published {round(c['published_h'] / 24)} days ago (+0)")
     elif c.get("age_h") is not None and c["age_h"] <= 24:
         score += 5
-        why.append("last bumped in the last 24 h; the first publication time is unknown (+5)")
+        why.append("last bumped <24 h ago, publish time unknown (+5)")
     for flag, label, pts in (
         ("basement", "below-ground floor (زیرهمکف / زیرزمین)", 20),
         ("no_parking", "no parking", 10),
@@ -443,19 +435,14 @@ async def dv_find_deals(
     max_age_hours: MaxAge = None,
     keywords: Keywords = None,
     exclude: Exclude = None,
-    min_discount_pct: Annotated[
-        int, Field(ge=5, le=60, description="Only ads at least this many percent below the median.")
-    ] = 15,
+    min_discount_pct: Annotated[int, Field(ge=5, le=60, description="Minimum percent below the median.")] = 15,
     pages: Pages = 3,
     limit: Annotated[int, Field(ge=1, le=50, description="Max deals.")] = 8,
 ) -> dict[str, Any]:
     """Ads priced well below the median of the same search, without a budget: scored deals, with bait and junk prices removed.
 
-    Scans the newest `pages` pages and keeps ads `min_discount_pct` to 70% below the median (price per m2 for property
-    for sale). Left out: suspect and placeholder prices, ads under 20% of the median (deposits, parts, bait), bait or
-    co-op titles (وامدار, قدرالسهم, اقساط, پیش\u200cفروش...; unless you ask for the word) and notice / parking titles.
-    Use a narrow query or filters: the median of a mixed category means nothing. Asking prices only. Next: dv_post,
-    dv_appraise, dv_compare.
+    Keeps ads `min_discount_pct` to 70% below the median (per m2 for property for sale); drops suspect prices and
+    bait, co-op, notice or parking titles. Use a narrow query. Next: dv_post, dv_appraise.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=max_price, brand_model=brand_model,
@@ -522,21 +509,15 @@ async def dv_new_since(
     exclude: Exclude = None,
     since: Annotated[
         str | None,
-        Field(
-            description="UTC timestamp like 2026-10-16T01:50:00Z (the `latest` of the previous call). Omit to use `hours`."
-        ),
+        Field(description="UTC time like 2026-10-16T01:50:00Z (the previous `latest`); omit to use `hours`."),
     ] = None,
-    hours: Annotated[
-        float, Field(gt=0, le=72, description="Used when `since` is omitted: ads from the last N hours.")
-    ] = 1,
+    hours: Annotated[float, Field(gt=0, le=72, description="Without `since`: ads from the last N hours.")] = 1,
     pages: Pages = 3,
     limit: Limit = 30,
 ) -> dict[str, Any]:
     """Ads published after a moment, newest first: poll this to watch a search (a new flat, a cheap car) without repeats.
 
-    Call it, remember `latest`, and pass it as `since` next time: only ads newer than that come back. Promoted old
-    ads are excluded by date. `more` is true when the page limit was reached and even more new ads exist. Nothing is
-    stored or pushed: the caller (or a scheduler) decides when to poll.
+    Pass the previous call's `latest` as `since`. `more` true: the page limit cut off more new ads.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=max_price,
@@ -583,16 +564,13 @@ async def dv_export(
     max_age_hours: MaxAge = None,
     keywords: Keywords = None,
     exclude: Exclude = None,
-    format: Annotated[
-        Literal["csv", "jsonl"], Field(description="'csv' (header + rows) or 'jsonl' (one JSON ad per line).")
-    ] = "csv",
+    format: Annotated[Literal["csv", "jsonl"], Field(description="'csv' or 'jsonl' (one JSON ad per line).")] = "csv",
     pages: Pages = 4,
     limit: Annotated[int, Field(ge=1, le=300, description="Max rows.")] = 100,
 ) -> dict[str, Any]:
     """The ads of a search as CSV or JSON lines text, ready to save to a spreadsheet or analyse.
 
-    Same arguments as dv_search. Columns: token, title, price, deposit, rent (Toman), district, posted (UTC), photos,
-    seller, info, url. Missing prices are empty. The text is in `data`; write it to a file yourself.
+    Columns: token, title, price, deposit, rent, district, posted (UTC), photos, seller, info, url. Text in `data`.
     """
     q = await build_query(
         city, category, query, districts=districts, min_price=min_price, max_price=max_price,
@@ -650,16 +628,14 @@ def pin(p: dict[str, Any], lat: float, lon: float) -> dict[str, Any]:
 @tool("Ads near a point")
 async def dv_nearby(
     lat: Annotated[
-        float, Field(ge=24, le=40, description="Latitude, e.g. 35.7. Get one from dv_place_search or dv_districts.")
+        float, Field(ge=24, le=40, description="Latitude, e.g. 35.7 (from dv_place_search or dv_districts).")
     ],
     lon: Annotated[float, Field(ge=43, le=64, description="Longitude, e.g. 51.4.")],
     category: Annotated[
         str,
-        Field(
-            description="Required: the map shows nothing without a category. Slug or Persian name, e.g. 'apartment-sell', 'apartment-rent', 'light'. List them with dv_categories."
-        ),
+        Field(description="Required (the map is empty without one); as in dv_search, e.g. 'apartment-sell'."),
     ],
-    radius_m: Annotated[int, Field(ge=100, le=20_000, description="Search radius in metres.")] = 1000,
+    radius_m: Annotated[int, Field(ge=100, le=20_000, description="Metres.")] = 1000,
     query: QueryText = None,
     min_price: MinPrice = None,
     max_price: MaxPrice = None,
@@ -671,10 +647,8 @@ async def dv_nearby(
 ) -> dict[str, Any]:
     """Ads on the map around a GPS point, nearest first, with coordinates, distance, price chips and a thumbnail.
 
-    Up to 200 ads per area are available (`total_in_area` is the true count). Pin positions are fuzzed by about 500 m
-    for most categories (`approximate_location`), so distances are approximate. A category is required (Divar's map
-    returns nothing without one). Map prices are rounded in the site's display (1.5 billion = 1,500,000,000); sale
-    pins give the total `price` and, for homes, `price_per_m2`. Next: dv_post for details.
+    `total_in_area` is the true count (up to 200 available). Prices are the site's rounded map chips; sale homes add
+    `price_per_m2`. Next: dv_post.
     """
     if not (category or "").strip() or category.strip().upper() == "ROOT":
         raise ApiError("dv_nearby needs a category (Divar's map shows nothing without one): see dv_categories.")
