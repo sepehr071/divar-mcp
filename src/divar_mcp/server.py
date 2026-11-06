@@ -9,7 +9,6 @@ from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
 
 from . import __version__, catalog, core, market, meta, places, post, search, watch  # noqa: F401  (imports register the tools)
-from .http import SITE
 from .registry import LOCAL, TOOLS
 
 INSTRUCTIONS = """\
@@ -26,7 +25,7 @@ same as in dv_search.
 
 Ad cards: prices in Toman. `price` = sale price; rentals have `deposit` and `rent` (`rent` 0 + `full_deposit` =
 رهن کامل). No price = negotiable or not stated, never 0. `suspect_price` marks placeholder or token prices, left out
-of rankings and statistics. `age_h` = hours since the last bump. An ad's page is https://divar.ir/v/<token>.
+of rankings and statistics. `age_h` = hours since the last bump.
 Results are newest first (price order is computed on fetched ads); the first 1-3 rows can be older paid promotions.
 Pass `next_cursor` back as `cursor`. Map pins are fuzzed about 500 m. All figures are sellers' asking prices.
 
@@ -45,32 +44,21 @@ mcp = MCPServer(
 )
 
 
-def _rows(data, thumbnails: bool, listed: bool = False):
-    """Trim ad rows (dicts with a `token`) for the model: no thumbnail URL unless asked, no `posted` next to
-    `age_h`, no false or empty flags. Rows inside a list also lose `chat`, `photos` and a `url` that is just
-    divar.ir/v/<token> (INSTRUCTIONS gives the pattern); `age_h` of 10 or more is a whole number. Everything else
-    passes through unchanged."""
+def _rows(data):
+    """Trim ad rows (dicts with a `token`) for the model: no `posted` next to `age_h`, no false or empty flags;
+    `age_h` of 10 or more is a whole number. `url`, `image`, `photos` and `chat` always stay (apps read them)."""
     if isinstance(data, list):
-        return [_rows(v, thumbnails, True) for v in data]
+        return [_rows(v) for v in data]
     if not isinstance(data, dict):
         return data
     row = "token" in data and "title" in data
     out = {}
     for k, v in data.items():
-        if row and (
-            (k == "image" and not thumbnails)
-            or (k == "posted" and "age_h" in data)
-            or v is None
-            or v is False
-            or v == ""
-            or v == []
-            or (listed and k in ("chat", "photos"))
-            or (listed and k == "url" and v == f"{SITE}/v/{data['token']}")
-        ):
+        if row and ((k == "posted" and "age_h" in data) or v is None or v is False or v == "" or v == []):
             continue
         if row and k == "age_h" and isinstance(v, float) and v >= 10:
             v = round(v)  # tenths of an hour matter only for fresh ads
-        out[k] = _rows(v, thumbnails)
+        out[k] = _rows(v)
     return out
 
 
@@ -79,7 +67,7 @@ def compact(fn):
 
     @functools.wraps(fn)
     async def run(*args, **kwargs):
-        data = _rows(await fn(*args, **kwargs), bool(kwargs.get("thumbnails")))
+        data = _rows(await fn(*args, **kwargs))
         return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 
     return run
@@ -118,7 +106,12 @@ for t in mcp._tool_manager.list_tools():
     # search arguments repeat across a dozen tools: document them once, on dv_search (INSTRUCTIONS says so)
     if t.name != "dv_search":
         for k, p in t.parameters.get("properties", {}).items():
-            if k in _shared and p.get("description") == _shared[k].get("description"):
+            if (
+                k in _shared
+                and "rice" not in k
+                and "eposit" not in k
+                and p.get("description") == _shared[k].get("description")
+            ):
                 p.pop("description", None)
 
 
