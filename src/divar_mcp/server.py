@@ -47,8 +47,9 @@ mcp = MCPServer(
 
 def _rows(data, thumbnails: bool, listed: bool = False):
     """Trim ad rows (dicts with a `token`) for the model: no thumbnail URL unless asked, no `posted` next to
-    `age_h`, no false or empty flags. Rows inside a list also lose `chat` and a `url` that is just
-    divar.ir/v/<token> (INSTRUCTIONS gives the pattern). Everything else passes through unchanged."""
+    `age_h`, no false or empty flags. Rows inside a list also lose `chat`, `photos` and a `url` that is just
+    divar.ir/v/<token> (INSTRUCTIONS gives the pattern); `age_h` of 10 or more is a whole number. Everything else
+    passes through unchanged."""
     if isinstance(data, list):
         return [_rows(v, thumbnails, True) for v in data]
     if not isinstance(data, dict):
@@ -63,10 +64,12 @@ def _rows(data, thumbnails: bool, listed: bool = False):
             or v is False
             or v == ""
             or v == []
-            or (listed and k == "chat")
+            or (listed and k in ("chat", "photos"))
             or (listed and k == "url" and v == f"{SITE}/v/{data['token']}")
         ):
             continue
+        if row and k == "age_h" and isinstance(v, float) and v >= 10:
+            v = round(v)  # tenths of an hour matter only for fresh ads
         out[k] = _rows(v, thumbnails)
     return out
 
