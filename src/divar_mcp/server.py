@@ -44,21 +44,26 @@ mcp = MCPServer(
 )
 
 
-def _rows(data):
-    """Trim ad rows (dicts with a `token`) for the model: no `posted` next to `age_h`, no false or empty flags;
-    `age_h` of 10 or more is a whole number. `url`, `image`, `photos` and `chat` always stay (apps read them)."""
+def _rows(data, thumbnails: bool):
+    """Trim ad rows (dicts with a `token`) for the model: no thumbnail URL unless asked, no `posted` next to
+    `age_h`, no false or empty flags. `url`, `photos` and `chat` always stay (apps read them)."""
     if isinstance(data, list):
-        return [_rows(v) for v in data]
+        return [_rows(v, thumbnails) for v in data]
     if not isinstance(data, dict):
         return data
     row = "token" in data and "title" in data
     out = {}
     for k, v in data.items():
-        if row and ((k == "posted" and "age_h" in data) or v is None or v is False or v == "" or v == []):
+        if row and (
+            (k == "image" and not thumbnails)
+            or (k == "posted" and "age_h" in data)
+            or v is None
+            or v is False
+            or v == ""
+            or v == []
+        ):
             continue
-        if row and k == "age_h" and isinstance(v, float) and v >= 10:
-            v = round(v)  # tenths of an hour matter only for fresh ads
-        out[k] = _rows(v)
+        out[k] = _rows(v, thumbnails)
     return out
 
 
@@ -67,7 +72,7 @@ def compact(fn):
 
     @functools.wraps(fn)
     async def run(*args, **kwargs):
-        data = _rows(await fn(*args, **kwargs))
+        data = _rows(await fn(*args, **kwargs), bool(kwargs.get("thumbnails")))
         return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 
     return run

@@ -26,7 +26,7 @@ from .core import (
 from .http import ApiError, api
 from .registry import tool
 
-FullText = Annotated[bool, Field(description="Do not cut the description (default cuts at 800 characters).")]
+FullText = Annotated[bool, Field(description="Do not cut the description (default cuts at 1500 characters).")]
 
 _PRICE_TITLES = {"ودیعه", "اجارهٔ ماهانه", "اجاره ماهانه", "قیمت", "قیمت پایه", "قیمت کل", "قیمت هر متر"}
 _SHARED = re.compile(r"هم[\s\u200c]?(?:خانه|خونه)|شریکی")
@@ -134,8 +134,7 @@ def parse_post(token: str, data: dict[str, Any], *, full_text: bool = False, max
         "city": city.get("name"),
         "city_id": to_int(city.get("city_id")),
         "district": (seo.get("web_info") or {}).get("district_persian"),
-        # relative time + city + district: only worth its tokens when there is no district
-        "location_text": None if (seo.get("web_info") or {}).get("district_persian") else where,
+        "location_text": where,
         # Jalali text only when it could not be converted; `updated` only when it differs from the publication
         "published": published.group(1).strip() if published and not _iso(published) else None,
         "published_at": _iso(published),
@@ -149,7 +148,7 @@ def parse_post(token: str, data: dict[str, Any], *, full_text: bool = False, max
         "specs": specs,
         "features": features,
         "missing_features": missing,
-        "description": _clip(desc, None if full_text else 800),
+        "description": _clip(desc, None if full_text else 1500),
         "photos": web.get("image_count") or len(images),
         "images": images[:max_images],
         "lat": round(pt["latitude"], 5) if "latitude" in pt else None,

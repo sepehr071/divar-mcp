@@ -142,9 +142,9 @@ def test_rows_trim_ad_cards_only():
         "age_h": 1.0,
         "chat": False,
     }
-    out = _rows({"ads": [ad], "image": "kept", "empty": []})
-    row = {"token": "gaX", "title": "t", "image": "https://i", "age_h": 1.0}
-    assert out == {"ads": [row], "image": "kept", "empty": []}
+    out = _rows({"ads": [ad], "image": "kept", "empty": []}, thumbnails=False)
+    assert out == {"ads": [{"token": "gaX", "title": "t", "age_h": 1.0}], "image": "kept", "empty": []}
+    assert _rows({"ads": [ad]}, thumbnails=True)["ads"][0]["image"] == "https://i"
 
 
 async def test_schemas_are_flat_and_untitled(client):

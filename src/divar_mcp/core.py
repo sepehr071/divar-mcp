@@ -861,7 +861,8 @@ Filters = Annotated[
     dict[str, Any] | None,
     Field(
         description=(
-            "Category filters (keys from dv_filters), e.g. {'size': {'min': 80, 'max': 120}, 'parking': true}."
+            "Category filters (keys from dv_filters), e.g. {'size': {'min': 80, 'max': 120}, 'parking': true}. "
+            "Unknown keys are returned in `ignored`."
         )
     ),
 ]

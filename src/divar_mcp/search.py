@@ -81,8 +81,8 @@ async def dv_search(
     pages: Pages = 1,
     limit: Limit = 20,
     cursor: Cursor = None,
-    thumbnails: Annotated[
-        bool, Field(description="Add each ad's thumbnail URL as `image` (~40 tokens per ad).")
+    thumbnails: Annotated[  # read by server.compact, which strips `image` from ad rows unless this is true
+        bool, Field(description="Include each ad's thumbnail URL in `image` (about 40 tokens per ad).")
     ] = False,
 ) -> dict[str, Any]:
     """Search Divar ads in one or more cities by category, text and filters; compact cards, prices in Toman.
