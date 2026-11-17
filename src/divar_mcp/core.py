@@ -245,7 +245,17 @@ async def resolve_cities(text: str | None) -> list[dict[str, Any]]:
 
 
 # Web URL slugs the site shows in addresses that differ from the API slug (from the API map).
-CATEGORY_ALIASES = {"car": "light", "auto": "cars", "buy-apartment": "apartment-sell"}
+CATEGORY_ALIASES = {
+    "car": "light",
+    "auto": "cars",
+    "buy-apartment": "apartment-sell",
+    "apartment-sale": "apartment-sell",
+    "laptop": "laptops",
+    "computer": "computers",
+    "auto-parts": "parts-accessories",  # the model's usual guesses for vehicle parts (prod failures 2026-11)
+    "car-parts": "parts-accessories",
+    "spare-parts": "parts-accessories",
+}
 
 
 async def categories() -> list[dict[str, Any]]:

@@ -108,3 +108,17 @@ async def test_dv_parse_query_extracts_city_district_price_and_category(client, 
     )
     above = (await client.call_tool("dv_parse_query", {"text": "بالای ۱۰۰ میلیون"})).structured_content
     assert above["search"] == {"min_price": 100_000_000}
+
+
+async def test_resolve_category_accepts_the_models_usual_guesses(monkeypatch):
+    from divar_mcp import core
+
+    async def flat():
+        return [{"slug": s, "name": s, "second_name": ""} for s in ("laptops", "parts-accessories")]
+
+    monkeypatch.setattr(core, "categories", flat)
+    assert [await core.resolve_category(t) for t in ("laptop", "auto-parts", "spare-parts")] == [
+        "laptops",
+        "parts-accessories",
+        "parts-accessories",
+    ]
