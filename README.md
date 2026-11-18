@@ -14,7 +14,7 @@ Search, read ads, compare, find the cheapest and best-value ads, appraise prices
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_divar--mcp-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=divar&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22divar-mcp%22%5D%7D)
 
-[For AI agents](#for-ai-agents) · [Why](#why) · [What it can do](#what-it-can-do) · [Quick start](#quick-start) · [Tools](#tools) · [How it works](#how-it-works) · [Good to know](#good-to-know) · [FAQ](#faq) · [Configuration](#configuration) · [فارسی](#فارسی) · [Development](#development)
+[For AI agents](#for-ai-agents) · [Why](#why) · [What it can do](#what-it-can-do) · [Quick start](#quick-start) · [Tools](#tools) · [Good to know](#good-to-know) · [FAQ](#faq) · [Configuration](#configuration) · [فارسی](#فارسی) · [Development](#development)
 
 ---
 
@@ -202,21 +202,6 @@ All tools start with `dv_` and are annotated read-only, except `dv_watch` and `d
 | `dv_similar` | Ads like this one (same brand and area, widening step by step) |
 | `dv_seller` | A seller's personal and business ad counts, business card (or "personal seller") and other ads (only business sellers' ads are listed, the first 11) |
 | `dv_dealer` | A business's public page: name, member since, first 11 ads |
-
-## How it works
-
-```text
-  AI agent  (Claude, Cursor, Copilot, ...)
-      │
-      │  MCP over stdio
-      ▼
-  divar-mcp  (runs on your machine)
-      │
-      │  HTTPS
-      └──────▶  api.divar.ir   ads, categories, places, map
-```
-
-`divar-mcp` runs locally and calls the same JSON gateway the divar.ir web app uses. It has no hosted server in between and no API key. Every POST it sends is a read-only query. Requests go out through a Chrome-impersonating client (TLS/HTTP2 fingerprint and headers), at most 2 at a time with a small random delay, and a failed call is retried up to twice. Divar's list answers are widget JSON; the server turns them into compact ad cards and computes rankings and statistics from the asking prices it fetched.
 
 ## Good to know
 
